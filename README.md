@@ -29,9 +29,13 @@ func main() {
 		return
 	}
 
-	fmt.Println(s.Minute)     // [0 15 30 45]
-	fmt.Println(s.DayOfWeek)  // [1 2 3 4 5]
-	fmt.Println(s.String())   // 0,15,30,45 9-17 * * 1-5
+	fmt.Println(s.Minute)    // [0 15 30 45]
+	fmt.Println(s.DayOfWeek) // [1 2 3 4 5]
+	fmt.Println(s.String())  // 0,15,30,45 9-17 * * 1-5
+
+	daily, _ := cronscribe.Parse("0 9 * * MON-FRI")
+	fmt.Println(daily.Describe())
+	// at 09:00, on Monday, Tuesday, Wednesday, Thursday and Friday
 }
 ```
 
@@ -56,13 +60,19 @@ Not supported yet: `@daily`-style shorthands, a seconds field, and
 descending ranges that wrap around (`22-2`). Field values outside their
 valid range, or with a start greater than their end, are rejected.
 
+`Schedule.Describe()` turns a parsed schedule into an English sentence, for
+places like a UI or a log line where "0 9 * * MON-FRI" isn't self-explanatory.
+It recognizes common shapes - a fixed time of day, an hourly interval, a
+fixed number of minutes - and falls back to listing the raw field values for
+anything unusual.
+
 ## Design
 
 Every exported function is pure: `Parse` takes a string and returns a
-`Schedule` or an error, nothing else; `Schedule.String()` reads its receiver
-and returns a string. There's no shared state and no I/O, which makes both
-functions trivial to table-test and safe to call from anywhere, including
-concurrently.
+`Schedule` or an error, nothing else; `Schedule.String()` and
+`Schedule.Describe()` only read their receiver and return a string. There's
+no shared state and no I/O, which makes all three trivial to table-test and
+safe to call from anywhere, including concurrently.
 
 ## Status
 
