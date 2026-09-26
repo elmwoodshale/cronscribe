@@ -55,10 +55,12 @@ _, err := cronscribe.Parse("* 25 * * *")
 - steps: `*/15`, `1-10/2`
 - three-letter names for month (`JAN`-`DEC`) and day of week (`SUN`-`SAT`)
 - `7` as an alias for Sunday in the day-of-week field
+- the predefined shorthands `@yearly` (or `@annually`), `@monthly`,
+  `@weekly`, `@daily` (or `@midnight`), and `@hourly`
 
-Not supported yet: `@daily`-style shorthands, a seconds field, and
-descending ranges that wrap around (`22-2`). Field values outside their
-valid range, or with a start greater than their end, are rejected.
+Not supported yet: a seconds field, and descending ranges that wrap around
+(`22-2`). Field values outside their valid range, or with a start greater
+than their end, are rejected.
 
 `Schedule.Describe()` turns a parsed schedule into an English sentence, for
 places like a UI or a log line where "0 9 * * MON-FRI" isn't self-explanatory.

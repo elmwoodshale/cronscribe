@@ -36,16 +36,45 @@ func TestParseSundayAlias(t *testing.T) {
 	}
 }
 
+func TestParseShorthands(t *testing.T) {
+	cases := []struct {
+		expr string
+		want string
+	}{
+		{"@yearly", "0 0 1 1 *"},
+		{"@annually", "0 0 1 1 *"},
+		{"@monthly", "0 0 1 * *"},
+		{"@weekly", "0 0 * * 0"},
+		{"@daily", "0 0 * * *"},
+		{"@midnight", "0 0 * * *"},
+		{"@hourly", "0 * * * *"},
+	}
+	for _, c := range cases {
+		s, err := Parse(c.expr)
+		if err != nil {
+			t.Fatalf("Parse(%q) error: %v", c.expr, err)
+		}
+		want, err := Parse(c.want)
+		if err != nil {
+			t.Fatalf("Parse(%q) error: %v", c.want, err)
+		}
+		if s.String() != want.String() {
+			t.Errorf("Parse(%q) = %q, want %q", c.expr, s.String(), want.String())
+		}
+	}
+}
+
 func TestParseRejectsBadInput(t *testing.T) {
 	cases := []string{
-		"60 * * * *",  // minute out of range
-		"* 24 * * *",  // hour out of range
-		"* * 0 * *",   // day of month starts at 1
-		"* * * 13 *",  // month out of range
-		"* * * * 8",   // day of week out of range
-		"* * * *",     // too few fields
-		"a b c d e",   // not numbers or names
-		"5-1 * * * *", // descending range
+		"60 * * * *",   // minute out of range
+		"* 24 * * *",   // hour out of range
+		"* * 0 * *",    // day of month starts at 1
+		"* * * 13 *",   // month out of range
+		"* * * * 8",    // day of week out of range
+		"* * * *",      // too few fields
+		"a b c d e",    // not numbers or names
+		"5-1 * * * *",  // descending range
+		"@fortnightly", // not a recognized shorthand
 	}
 	for _, c := range cases {
 		if _, err := Parse(c); err == nil {

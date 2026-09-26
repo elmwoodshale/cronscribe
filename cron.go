@@ -37,12 +37,29 @@ var dowNames = map[string]int{
 	"SUN": 0, "MON": 1, "TUE": 2, "WED": 3, "THU": 4, "FRI": 5, "SAT": 6,
 }
 
+// shorthands maps the predefined scheduling constants from the crontab(5)
+// manual to the five-field expression they're shorthand for.
+var shorthands = map[string]string{
+	"@yearly":   "0 0 1 1 *",
+	"@annually": "0 0 1 1 *",
+	"@monthly":  "0 0 1 * *",
+	"@weekly":   "0 0 * * 0",
+	"@daily":    "0 0 * * *",
+	"@midnight": "0 0 * * *",
+	"@hourly":   "0 * * * *",
+}
+
 // Parse validates a standard five-field cron expression and returns the
 // resolved schedule. It accepts *, lists (1,2,3), ranges (1-5), steps
-// (*/15, 1-10/2) and, for month and day-of-week, three-letter names
-// (JAN, MON). It does not accept the "@daily" style shorthands, a
-// seconds field, or descending ranges that wrap around (22-2).
+// (*/15, 1-10/2), for month and day-of-week, three-letter names
+// (JAN, MON), and the "@hourly"/"@daily"/"@weekly"/"@monthly"/"@yearly"
+// (and "@annually", "@midnight") shorthands. It does not accept a seconds
+// field or descending ranges that wrap around (22-2).
 func Parse(expr string) (Schedule, error) {
+	if expanded, ok := shorthands[strings.TrimSpace(expr)]; ok {
+		return Parse(expanded)
+	}
+
 	fields := strings.Fields(expr)
 	if len(fields) != 5 {
 		return Schedule{}, fmt.Errorf("cron: expected 5 fields, got %d", len(fields))
