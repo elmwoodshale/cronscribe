@@ -11,9 +11,11 @@ import (
 
 // Schedule is the parsed, validated form of a cron expression. Each slice
 // holds the sorted, deduplicated set of values that field matches; an
-// empty slice never occurs for a Schedule produced by Parse.
+// empty slice never occurs for a Schedule produced by Parse, except Second,
+// which is nil when the expression had no seconds field.
 type Schedule struct {
-	Minute     []int
+	Second     []int
+	Minute    []int
 	Hour       []int
 	DayOfMonth []int
 	Month      []int
@@ -53,16 +55,30 @@ var shorthands = map[string]string{
 // resolved schedule. It accepts *, lists (1,2,3), ranges (1-5), steps
 // (*/15, 1-10/2), for month and day-of-week, three-letter names
 // (JAN, MON), and the "@hourly"/"@daily"/"@weekly"/"@monthly"/"@yearly"
-// (and "@annually", "@midnight") shorthands. It does not accept a seconds
-// field or descending ranges that wrap around (22-2).
+// (and "@annually", "@midnight") shorthands. A sixth field is read as a
+// leading seconds field (0-59). It does not accept descending ranges that
+// wrap around (22-2).
 func Parse(expr string) (Schedule, error) {
 	if expanded, ok := shorthands[strings.TrimSpace(expr)]; ok {
 		return Parse(expanded)
 	}
 
 	fields := strings.Fields(expr)
-	if len(fields) != 5 {
-		return Schedule{}, fmt.Errorf("cron: expected 5 fields, got %d", len(fields))
+	if len(fields) != 5 && len(fields) != 6 {
+		return Schedule{}, fmt.Errorf("cron: expected 5 or 6 fields, got %d", len(fields))
+	}
+
+	var s Schedule
+
+	// A sixth field is a leading seconds field. Five-field expressions
+	// leave Second nil so they keep formatting as five fields.
+	if len(fields) == 6 {
+		values, err := parseField(fields[0], fieldSpec{name: "second", min: 0, max: 59})
+		if err != nil {
+			return Schedule{}, fmt.Errorf("cron: second field %q: %w", fields[0], err)
+		}
+		s.Second = values
+		fields = fields[1:]
 	}
 
 	specs := [5]fieldSpec{
@@ -73,7 +89,6 @@ func Parse(expr string) (Schedule, error) {
 		{name: "day of week", min: 0, max: 7, names: dowNames, alias: map[int]int{7: 0}},
 	}
 
-	var s Schedule
 	targets := [5]*[]int{&s.Minute, &s.Hour, &s.DayOfMonth, &s.Month, &s.DayOfWeek}
 
 	for i, spec := range specs {

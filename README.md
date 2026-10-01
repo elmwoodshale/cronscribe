@@ -58,9 +58,13 @@ _, err := cronscribe.Parse("* 25 * * *")
 - the predefined shorthands `@yearly` (or `@annually`), `@monthly`,
   `@weekly`, `@daily` (or `@midnight`), and `@hourly`
 
-Not supported yet: a seconds field, and descending ranges that wrap around
-(`22-2`). Field values outside their valid range, or with a start greater
-than their end, are rejected.
+- an optional leading seconds field, making six fields in total
+  (`*/10 * * * * *`); it fills `Schedule.Second`, which stays nil for
+  five-field input, and `String()` writes six fields back only when it is set
+
+Not supported yet: descending ranges that wrap around (`22-2`). Field values
+outside their valid range, or with a start greater than their end, are
+rejected.
 
 `Schedule.Describe()` turns a parsed schedule into an English sentence, for
 places like a UI or a log line where "0 9 * * MON-FRI" isn't self-explanatory.

@@ -83,6 +83,60 @@ func TestParseRejectsBadInput(t *testing.T) {
 	}
 }
 
+func TestParseSecondsField(t *testing.T) {
+	s, err := Parse("*/20 30 9 * * MON")
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	if !equalInts(s.Second, []int{0, 20, 40}) {
+		t.Errorf("Second = %v, want [0 20 40]", s.Second)
+	}
+	if !equalInts(s.Minute, []int{30}) || !equalInts(s.Hour, []int{9}) || !equalInts(s.DayOfWeek, []int{1}) {
+		t.Errorf("other fields shifted wrongly: %+v", s)
+	}
+	if got, want := s.String(), "0,20,40 30 9 * * 1"; got != want {
+		t.Errorf("String() = %q, want %q", got, want)
+	}
+}
+
+func TestParseFiveFieldHasNoSeconds(t *testing.T) {
+	s, err := Parse("0 9 * * *")
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	if s.Second != nil {
+		t.Errorf("Second = %v, want nil", s.Second)
+	}
+}
+
+func TestParseSecondsRejectsBadInput(t *testing.T) {
+	cases := []string{
+		"60 * * * * *",  // second out of range
+		"* * * * * * *", // too many fields
+		"x * * * * *",   // not a number
+		"5-1 * * * * *", // descending second range
+	}
+	for _, c := range cases {
+		if _, err := Parse(c); err == nil {
+			t.Errorf("Parse(%q) succeeded, want error", c)
+		}
+	}
+}
+
+func TestSecondsRoundTrip(t *testing.T) {
+	s, err := Parse("5,10-20 */15 9-17 * * 1-5")
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	s2, err := Parse(s.String())
+	if err != nil {
+		t.Fatalf("Parse(%q) error: %v", s.String(), err)
+	}
+	if s.String() != s2.String() {
+		t.Errorf("round trip mismatch: %q -> %q", s.String(), s2.String())
+	}
+}
+
 func TestFormatRoundTrip(t *testing.T) {
 	cases := []string{
 		"* * * * *",

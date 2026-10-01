@@ -10,15 +10,20 @@ import (
 // String renders the schedule back into a canonical five-field cron
 // expression, collapsing runs of consecutive values into ranges. It only
 // reads its receiver, so it works the same whether the Schedule came
-// from Parse or was built by hand.
+// from Parse or was built by hand. A schedule with a seconds field renders
+// as six fields, seconds first; otherwise it renders as five.
 func (s Schedule) String() string {
-	fields := []string{
+	var fields []string
+	if len(s.Second) > 0 {
+		fields = append(fields, formatField(s.Second, 0, 59))
+	}
+	fields = append(fields,
 		formatField(s.Minute, 0, 59),
 		formatField(s.Hour, 0, 23),
 		formatField(s.DayOfMonth, 1, 31),
 		formatField(s.Month, 1, 12),
 		formatField(s.DayOfWeek, 0, 6),
-	}
+	)
 	return strings.Join(fields, " ")
 }
 

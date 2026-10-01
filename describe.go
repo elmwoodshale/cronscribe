@@ -28,6 +28,17 @@ func (s Schedule) Describe() string {
 
 	parts := []string{describeTime(s, minuteFull, hourFull)}
 
+	// A lone second 0 is what a five-field expression implies, so it needs
+	// no mention.
+	if len(s.Second) > 0 && !(len(s.Second) == 1 && s.Second[0] == 0) {
+		if isFullRange(dedupeSorted(s.Second), 0, 59) {
+			parts = append(parts, "every second of each matching minute")
+		} else {
+			parts = append(parts, fmt.Sprintf("at %s %s of each matching minute",
+				pluralize(len(s.Second), "second", "seconds"), joinInts(s.Second)))
+		}
+	}
+
 	switch {
 	case !domFull && !dowFull:
 		// Standard cron treats a restriction on both fields as "day of
